@@ -14,11 +14,7 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
 
-
-    # Include the robot_state_publisher launch file, provided by our own package. Force sim time to be enabled
-    # !!! MAKE SURE YOU SET THE PACKAGE NAME CORRECTLY !!!
-
-    package_name='goal_e' #<--- CHANGE ME
+    package_name='goal_e'
 
     rsp = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource([os.path.join(
@@ -26,14 +22,11 @@ def generate_launch_description():
                 )]), launch_arguments={'use_sim_time': 'true'}.items()
     )
 
-    # Start Ignition Gazebo
     gz_sim = ExecuteProcess(
         cmd=['gz', 'sim', '-v', '4', '-r', 'empty.sdf'],
         output='screen'
     )
 
-
-    # Spawn robot from /robot_description into Gazebo (Ignition)
     spawn_entity = Node(
         package='ros_gz_sim',
         executable='create',
@@ -42,23 +35,17 @@ def generate_launch_description():
             '-name', 'my_bot',
             '-x', '0.0',
             '-y', '0.0',
-            '-z', '0.3'     # <- raise the robot
+            '-z', '0.3'
         ],
         output='screen'
     )
 
-    # Bridge ROS2 <-> Ignition
     bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
         arguments=[
-            # ROS2 -> Ignition
             '/cmd_vel@geometry_msgs/msg/Twist@gz.msgs.Twist',
-
-            # Ignition -> ROS2
             '/model/my_bot/odometry@nav_msgs/msg/Odometry@gz.msgs.Odometry',
-
-            # Clock bridge (Ignition -> ROS2)
             '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
         ],
         output='screen'
@@ -83,7 +70,6 @@ def generate_launch_description():
         arguments=['joint_state_broadcaster', "--controller-manager", "/controller_manager"]
     )
 
-    # Launch them all!
     return LaunchDescription([
         rsp,
         gz_sim,

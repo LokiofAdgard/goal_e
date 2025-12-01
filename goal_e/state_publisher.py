@@ -41,7 +41,7 @@ class StatePublisher(Node):
                 # update joint_state
                 now = self.get_clock().now()
                 joint_state.header.stamp = now.to_msg()
-                joint_state.name = ['base_link_to_rf_wheel', 'base_link_to_rb_wheel', 'base_link_to_lf_wheel', 'base_link_to_lb_wheel']
+                joint_state.name = ['chassis_to_rf_wheel', 'chassis_to_rb_wheel', 'chassis_to_lf_wheel', 'chassis_to_lb_wheel']
                 joint_state.position = [rf_wheel, rb_wheel, lf_wheel, lb_wheel]
 
                 # publish joint state

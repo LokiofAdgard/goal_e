@@ -2,6 +2,7 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="myfirst_xacro">
 
     <xacro:include filename="ros2_control.xacro" />
+    <!-- <xacro:include filename="lidar.xacro" /> -->
     <!-- <xacro:include filename="gazebo_control.xacro" /> -->
 
     <!-- Parameters -->
@@ -27,8 +28,18 @@
     <xacro:property name="omni_x" value="${base_length / 4}" />
     <xacro:property name="omni_z" value="${base_to_ground - (base_height/2) - omni_wheel_radius}" />
 
-    
     <link name="base_link">
+
+    </link>
+
+    <joint name="chassis_joint" type="fixed">
+        <parent link="base_link" />
+        <child link="chassis" />
+        <origin xyz="-0 0 0" />
+    </joint>
+
+
+    <link name="chassis">
         <visual>
             <geometry>
                 <box size="${base_length} ${base_width} ${base_height}" />
@@ -93,25 +104,6 @@
         </joint>
     </xacro:macro>
 
-    <!-- Omni Wheel Macro -->
-    <xacro:macro name="omniWheel" params="name parent x y z rpy">
-        <link name="${name}">
-            <visual>
-                <geometry>
-                    <sphere radius="${omni_wheel_radius}" />
-                </geometry>
-                <origin xyz="0 0 ${-omni_z}" />
-            </visual>
-        </link>
-
-        <joint name="${parent}_to_${name}" type="continuous">
-            <parent link="${parent}" />
-            <child link="${name}" />
-            <origin xyz="${x} ${y} ${z}" rpy="${rpy}" />
-            <axis xyz="0 0 1" />
-        </joint>
-    </xacro:macro>
-
     <!-- Lidar Macro -->
     <xacro:macro name="lidar" params="name parent x y z rpy">
         <link name="${name}">
@@ -153,14 +145,14 @@
 
     <!-- Wheels -->
     <xacro:wheel name="lb_wheel"
-        parent="base_link"
+        parent="chassis"
         x="${-wheel_offset_x}"
         y="${wheel_offset_y}"
         z="${-base_height/2}"
         rpy="-1.57075 0 0"
         axs="0 0 1" />
     <xacro:wheel name="rb_wheel"
-        parent="base_link"
+        parent="chassis"
         x="${-wheel_offset_x}"
         y="${-wheel_offset_y}"
         z="${-base_height/2}"
@@ -168,14 +160,14 @@
         axs="0 0 -1" />
 
     <xacro:wheel name="lf_wheel"
-        parent="base_link"
+        parent="chassis"
         x="${+wheel_offset_x}"
         y="${wheel_offset_y}"
         z="${-base_height/2}"
         rpy="-1.57075 0 0"
         axs="0 0 1" />
     <xacro:wheel name="rf_wheel"
-        parent="base_link"
+        parent="chassis"
         x="${+wheel_offset_x}"
         y="${-wheel_offset_y}"
         z="${-base_height/2}"
@@ -184,7 +176,7 @@
 
     <!-- Lidar -->
     <xacro:lidar name="lidar1"
-        parent="base_link"
+        parent="chassis"
         x="0.1"
         y="0"
         z="${base_height/2}"

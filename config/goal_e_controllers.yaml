@@ -17,8 +17,8 @@ diff_cont:
 
     base_frame_id: base_link
 
-    left_wheel_names: ['base_link_to_lf_wheel', 'base_link_to_lb_wheel']
-    right_wheel_names: ['base_link_to_rf_wheel', 'base_link_to_rb_wheel']
+    left_wheel_names: ['chassis_to_lf_wheel', 'chassis_to_lb_wheel']
+    right_wheel_names: ['chassis_to_rf_wheel', 'chassis_to_rb_wheel']
     wheel_separation: 0.325
     wheel_radius: 0.06
 
