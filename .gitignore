@@ -1,0 +1,40 @@
+# --- Build and install artifacts ---
+build/
+install/
+log/
+
+# --- Python build artifacts ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+*.egg/
+*.eggs/
+*.manifest
+dist/
+
+# --- CMake / ament build artifacts ---
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+ament_cmake_core/
+*.cmake
+*.make
+Makefile
+
+# --- IDE / editor ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak
+
+# --- OS / misc ---
+.DS_Store
+Thumbs.db
+*.tmp
+
+# --- Test / runtime logs ---
+test_results/
+*.log
