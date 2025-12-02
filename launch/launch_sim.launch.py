@@ -22,8 +22,14 @@ def generate_launch_description():
                 )]), launch_arguments={'use_sim_time': 'true'}.items()
     )
 
+    world_file = os.path.join(
+        get_package_share_directory('goal_e'),
+        'world',
+        'test_world.sdf'
+    )
+
     gz_sim = ExecuteProcess(
-        cmd=['gz', 'sim', '-v', '4', '-r', 'empty.sdf'],
+        cmd=['gz', 'sim', '-v', '4', '-r', world_file],
         output='screen'
     )
 
@@ -47,6 +53,8 @@ def generate_launch_description():
             '/cmd_vel@geometry_msgs/msg/Twist@gz.msgs.Twist',
             '/model/my_bot/odometry@nav_msgs/msg/Odometry@gz.msgs.Odometry',
             '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
+            '/lidar1/scan@sensor_msgs/msg/LaserScan@gz.msgs.LaserScan',
+            '/lidar1/scan/points@sensor_msgs/msg/PointCloud2@gz.msgs.PointCloudPacked',
         ],
         output='screen'
     )
@@ -55,6 +63,13 @@ def generate_launch_description():
         package='goal_e',
         executable='twistToStamped',
         name='twist_to_stamped',
+        output='screen',
+    )
+
+    lidar_frame_fix = Node(
+        package='goal_e',
+        executable='lidar_frame_fix',
+        name='lidar_fix',
         output='screen',
     )
 
@@ -76,6 +91,7 @@ def generate_launch_description():
         spawn_entity,
         bridge,
         twist_to_stamped,
+        lidar_frame_fix,
         diff_drive_spawner,
         joint_broad_spawner
     ])

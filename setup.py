@@ -16,6 +16,7 @@ setup(
         (os.path.join('share', package_name, 'urdf'), glob('urdf/*')),
         (os.path.join('share', package_name, 'launch'), glob('launch/*')),
         (os.path.join('share', package_name, 'config'), glob('config/*')),
+        (os.path.join('share', package_name, 'world'), glob('world/*')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -32,6 +33,7 @@ setup(
         'console_scripts': [
             'state_publisher = goal_e.state_publisher:main',
             'twistToStamped = goal_e.twistToStamped:main',
+            'lidar_frame_fix = goal_e.lidar_frame_fix:main',
         ],
     },
 )
