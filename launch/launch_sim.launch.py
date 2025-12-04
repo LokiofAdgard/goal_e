@@ -1,97 +1,109 @@
+#!/usr/bin/env python3
 import os
-
 from ament_index_python.packages import get_package_share_directory
-
-
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.actions import ExecuteProcess
-
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-
-
+import xacro
 
 def generate_launch_description():
 
-    package_name='goal_e'
+    pkg_share = get_package_share_directory('goal_e')
+    urdf_file = os.path.join(pkg_share, 'urdf', 'goal_e.urdf.xacro')
+    world_file = os.path.join(pkg_share, 'world', 'test_world.sdf')
+    use_sim_time = LaunchConfiguration('use_sim_time', default='true')
 
-    rsp = IncludeLaunchDescription(
-                PythonLaunchDescriptionSource([os.path.join(
-                    get_package_share_directory(package_name),'launch','rsp.launch.py'
-                )]), launch_arguments={'use_sim_time': 'true'}.items()
+    # Process URDF/Xacro
+    robot_description = xacro.process_file(urdf_file).toxml()
+
+    # Launch Gazebo Server + Client
+    gz_server = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(get_package_share_directory('ros_gz_sim'), 'launch', 'gz_sim.launch.py')
+        ),
+        launch_arguments={'gz_args': ['-r -v4', world_file]}.items()
+    )
+    gz_client = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(get_package_share_directory('ros_gz_sim'), 'launch', 'gz_sim.launch.py')
+        ),
+        launch_arguments={'gz_args': '-g -v4'}.items()
     )
 
-    world_file = os.path.join(
-        get_package_share_directory('goal_e'),
-        'world',
-        'test_world.sdf'
+    # Robot State Publisher
+    rsp = Node(
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        output='screen',
+        parameters=[{
+            'robot_description': robot_description,
+            'use_sim_time': use_sim_time
+        }]
     )
 
-    gz_sim = ExecuteProcess(
-        cmd=['gz', 'sim', '-v', '4', '-r', world_file],
-        output='screen'
-    )
-
+    # Spawn robot in Gazebo
     spawn_entity = Node(
         package='ros_gz_sim',
         executable='create',
+        output='screen',
         arguments=[
+            '-name', 'goal_e',
             '-topic', 'robot_description',
-            '-name', 'my_bot',
-            '-x', '0.0',
-            '-y', '0.0',
-            '-z', '0.3'
-        ],
-        output='screen'
+            '-x', '0', '-y', '0', '-z', '0.05'
+        ]
     )
 
-    bridge = Node(
+    # Controller Manager Node
+    controller_manager = Node(
+        package="controller_manager",
+        executable="ros2_control_node",
+        parameters=[{
+            'robot_description': robot_description,
+            'use_sim_time': use_sim_time
+        }],
+        output="screen"
+    )
+
+    # Load joint_state_broadcaster
+    joint_state_broadcaster = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["joint_state_broadcaster"],
+        output="screen"
+    )
+
+    # Load diff_drive controller
+    diff_drive_controller = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["diff_drive_base_controller"],
+        output="screen"
+    )
+
+    # ROS-GZ Bridge for cmd_vel
+    ros_gz_bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
+        output='screen',
         arguments=[
             '/cmd_vel@geometry_msgs/msg/Twist@gz.msgs.Twist',
-            '/model/my_bot/odometry@nav_msgs/msg/Odometry@gz.msgs.Odometry',
-            '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
-            '/lidar1/scan@sensor_msgs/msg/LaserScan@gz.msgs.LaserScan',
-            '/lidar1/scan/points@sensor_msgs/msg/PointCloud2@gz.msgs.PointCloudPacked',
+            '/odom@nav_msgs/msg/Odometry@gz.msgs.Odometry'
         ],
-        output='screen'
-    )
-
-    twist_to_stamped = Node(
-        package='goal_e',
-        executable='twistToStamped',
-        name='twist_to_stamped',
-        output='screen',
-    )
-
-    lidar_frame_fix = Node(
-        package='goal_e',
-        executable='lidar_frame_fix',
-        name='lidar_fix',
-        output='screen',
-    )
-
-    diff_drive_spawner = Node(
-        package='controller_manager',
-        executable='spawner',
-        arguments=['diff_cont', "--controller-manager", "/controller_manager"]
-    )
-
-    joint_broad_spawner = Node(
-        package='controller_manager',
-        executable='spawner',
-        arguments=['joint_state_broadcaster', "--controller-manager", "/controller_manager"]
+        parameters=[{'use_sim_time': use_sim_time}]
     )
 
     return LaunchDescription([
+        DeclareLaunchArgument('use_sim_time', default_value='true',
+                              description='Use simulation time'),
+
+        gz_server,
+        gz_client,
         rsp,
-        gz_sim,
         spawn_entity,
-        bridge,
-        twist_to_stamped,
-        lidar_frame_fix,
-        diff_drive_spawner,
-        joint_broad_spawner
+        controller_manager,
+        joint_state_broadcaster,
+        diff_drive_controller,
+        ros_gz_bridge
     ])
