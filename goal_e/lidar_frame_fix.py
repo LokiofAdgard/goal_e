@@ -17,7 +17,7 @@ class LidarFrameFix(Node):
         )
         self.pub_scan = self.create_publisher(
             LaserScan,
-            '/lidar1/scan_fixed',
+            '/scan',
             10
         )
 
@@ -30,7 +30,7 @@ class LidarFrameFix(Node):
         )
         self.pub_points = self.create_publisher(
             PointCloud2,
-            '/lidar1/scan/points_fixed',
+            '/scan/points',
             10
         )
 

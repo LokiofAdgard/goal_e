@@ -19,7 +19,7 @@ def generate_launch_description():
     rsp = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource([os.path.join(
                     get_package_share_directory(package_name),'launch','rsp.launch.py'
-                )]), launch_arguments={'use_sim_time': 'true'}.items()
+                )]), launch_arguments={'use_sim_time': 'True'}.items()
     )
 
     world_file = os.path.join(
@@ -51,7 +51,7 @@ def generate_launch_description():
         executable='parameter_bridge',
         arguments=[
             '/cmd_vel@geometry_msgs/msg/Twist@gz.msgs.Twist',
-            '/model/my_bot/odometry@nav_msgs/msg/Odometry@gz.msgs.Odometry',
+            # '/model/my_bot/odometry@nav_msgs/msg/Odometry@gz.msgs.Odometry',
             '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
             '/lidar1/scan@sensor_msgs/msg/LaserScan@gz.msgs.LaserScan',
             '/lidar1/scan/points@sensor_msgs/msg/PointCloud2@gz.msgs.PointCloudPacked',
