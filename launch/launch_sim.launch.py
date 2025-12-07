@@ -22,11 +22,23 @@ def generate_launch_description():
                 )]), launch_arguments={'use_sim_time': 'True'}.items()
     )
 
+    # world_file = os.path.join(
+    #     get_package_share_directory('goal_e'),
+    #     'world',
+    #     'test_world.sdf'
+    # )
+
     world_file = os.path.join(
         get_package_share_directory('goal_e'),
         'world',
-        'test_world.sdf'
+        'oct_world.world'
     )
+
+    # world_file = os.path.join(
+    #     get_package_share_directory('goal_e'),
+    #     'world',
+    #     'turtlebot3_world.world'
+    # )
 
     gz_sim = ExecuteProcess(
         cmd=['gz', 'sim', '-v', '4', '-r', world_file],
