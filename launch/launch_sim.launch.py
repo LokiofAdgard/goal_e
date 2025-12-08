@@ -2,49 +2,49 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 
-
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.actions import ExecuteProcess
 
 from launch_ros.actions import Node
 
 
-
 def generate_launch_description():
 
-    package_name='goal_e'
+    package_name = 'goal_e'
 
+    # --------------------------
+    # Robot State Publisher
+    # --------------------------
     rsp = IncludeLaunchDescription(
-                PythonLaunchDescriptionSource([os.path.join(
-                    get_package_share_directory(package_name),'launch','rsp.launch.py'
-                )]), launch_arguments={'use_sim_time': 'True'}.items()
+        PythonLaunchDescriptionSource([
+            os.path.join(
+                get_package_share_directory(package_name),
+                'launch',
+                'rsp.launch.py'
+            )
+        ]),
+        launch_arguments={'use_sim_time': 'True'}.items()
     )
 
-    # world_file = os.path.join(
-    #     get_package_share_directory('goal_e'),
-    #     'world',
-    #     'test_world.sdf'
-    # )
-
+    # --------------------------
+    # Gazebo world
+    # --------------------------
     world_file = os.path.join(
         get_package_share_directory('goal_e'),
         'world',
-        'oct_world.world'
+        'assessment.sdf'
     )
-
-    # world_file = os.path.join(
-    #     get_package_share_directory('goal_e'),
-    #     'world',
-    #     'turtlebot3_world.world'
-    # )
 
     gz_sim = ExecuteProcess(
         cmd=['gz', 'sim', '-v', '4', '-r', world_file],
         output='screen'
     )
 
+    # --------------------------
+    # Spawn main robot
+    # --------------------------
     spawn_entity = Node(
         package='ros_gz_sim',
         executable='create',
@@ -58,12 +58,14 @@ def generate_launch_description():
         output='screen'
     )
 
+    # --------------------------
+    # ros-gz bridge
+    # --------------------------
     bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
         arguments=[
             '/cmd_vel@geometry_msgs/msg/Twist@gz.msgs.Twist',
-            # '/model/my_bot/odometry@nav_msgs/msg/Odometry@gz.msgs.Odometry',
             '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
             '/lidar1/scan@sensor_msgs/msg/LaserScan@gz.msgs.LaserScan',
             '/lidar1/scan/points@sensor_msgs/msg/PointCloud2@gz.msgs.PointCloudPacked',
@@ -97,6 +99,27 @@ def generate_launch_description():
         arguments=['joint_state_broadcaster', "--controller-manager", "/controller_manager"]
     )
 
+    # --------------------------
+    # Include sphere spawning launch file (delayed)
+    # --------------------------
+    spawn_spheres_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            os.path.join(
+                get_package_share_directory('goal_e'),
+                'launch',
+                'spawn_spheres.launch.py'
+            )
+        ])
+    )
+
+    delayed_spawn_spheres = TimerAction(
+        period=5.0,
+        actions=[spawn_spheres_launch]
+    )
+
+    # --------------------------
+    # Final Launch Description
+    # --------------------------
     return LaunchDescription([
         rsp,
         gz_sim,
@@ -105,5 +128,6 @@ def generate_launch_description():
         twist_to_stamped,
         lidar_frame_fix,
         diff_drive_spawner,
-        joint_broad_spawner
+        joint_broad_spawner,
+        delayed_spawn_spheres
     ])

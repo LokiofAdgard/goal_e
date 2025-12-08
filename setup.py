@@ -34,6 +34,7 @@ setup(
             'state_publisher = goal_e.state_publisher:main',
             'twistToStamped = goal_e.twistToStamped:main',
             'lidar_frame_fix = goal_e.lidar_frame_fix:main',
+            'spawn_spheres = goal_e.spawn_spheres:main',
         ],
     },
 )
