@@ -38,6 +38,19 @@
             <state_interface name="velocity" />
             <state_interface name="position" />
         </joint>
+
+        <joint name="chassis_to_arm1">
+            <command_interface name="position" />
+            <state_interface name="position" />
+            <state_interface name="velocity" />
+        </joint>
+
+        <joint name="chassis_to_arm2">
+            <command_interface name="position" />
+            <state_interface name="position" />
+            <state_interface name="velocity" />
+        </joint>
+
     </ros2_control>
 
     <gazebo>

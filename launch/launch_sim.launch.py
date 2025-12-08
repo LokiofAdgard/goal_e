@@ -99,6 +99,14 @@ def generate_launch_description():
         arguments=['joint_state_broadcaster', "--controller-manager", "/controller_manager"]
     )
 
+    arm_controller_spawner = Node(
+        package='controller_manager',
+        executable='spawner',
+        arguments=['arm_controller', '--controller-manager', '/controller_manager'],
+        output='screen'
+    )
+
+
     # --------------------------
     # Include sphere spawning launch file (delayed)
     # --------------------------
@@ -129,5 +137,6 @@ def generate_launch_description():
         lidar_frame_fix,
         diff_drive_spawner,
         joint_broad_spawner,
+        arm_controller_spawner,
         delayed_spawn_spheres
     ])

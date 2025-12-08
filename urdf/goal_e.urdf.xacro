@@ -20,6 +20,12 @@
     <xacro:property name="lidar_width" value="0.03" />
     <xacro:property name="lidar_mass" value="0.1" />
 
+    <xacro:property name="arm_vert_length" value="0.3" />
+    <xacro:property name="arm_vert_radius" value="0.01" />
+    <xacro:property name="arm_horiz_length" value="${base_width*0.4}" />
+    <xacro:property name="arm_horiz_radius" value="0.01" />
+    <xacro:property name="arm_mass" value="0.4" />
+
     <!-- Derived -->
     <xacro:property name="base_to_ground" value="${wheel_radius + base_height/2}" />
     <xacro:property name="wheel_offset_y" value="${base_width / 2}" />
@@ -187,6 +193,75 @@
         </gazebo>
     </xacro:macro>
 
+    <!-- L-Shaped Arm Macro -->
+    <xacro:macro name="arm_L" params="name parent x y z rpy axis dir=1">
+
+        <link name="${name}">
+
+            <!-- Vertical segment -->
+            <visual>
+                <geometry>
+                    <cylinder length="${arm_vert_length}" radius="${arm_vert_radius}" />
+                </geometry>
+                <origin xyz="0 0 ${arm_vert_length/2}" />
+                <material name="black">
+                    <color rgba="0 0 0 1.0" />
+                </material>
+            </visual>
+
+            <!-- Horizontal segment -->
+            <visual>
+                <geometry>
+                    <cylinder length="${arm_horiz_length}" radius="${arm_horiz_radius}" />
+                </geometry>
+                <origin xyz="0 ${dir * arm_horiz_length/2} ${arm_vert_length}"
+                    rpy="1.5708 0 0" />
+                <material name="black">
+                    <color rgba="0 0 0 1.0" />
+                </material>
+            </visual>
+
+            <!-- Collisions -->
+            <collision>
+                <geometry>
+                    <cylinder length="${arm_vert_length}" radius="${arm_vert_radius}" />
+                </geometry>
+                <origin xyz="0 0 ${arm_vert_length/2}" />
+            </collision>
+
+            <collision>
+                <geometry>
+                    <cylinder length="${arm_horiz_length}" radius="${arm_horiz_radius}" />
+                </geometry>
+                <origin xyz="0 ${dir * arm_horiz_length/2} ${arm_vert_length}"
+                    rpy="1.5708 0 0" />
+            </collision>
+
+            <!-- Inertial -->
+            <inertial>
+                <mass value="${arm_mass}" />
+                <origin xyz="0 0 ${arm_vert_length/2}" />
+                <inertia
+                    ixx="${(1.0/12.0)*arm_mass*(3*arm_vert_radius*arm_vert_radius + arm_vert_length*arm_vert_length)}"
+                    iyy="${(1.0/12.0)*arm_mass*(3*arm_vert_radius*arm_vert_radius + arm_vert_length*arm_vert_length)}"
+                    izz="${0.5 * arm_mass * arm_vert_radius * arm_vert_radius}"
+                    ixy="0" ixz="0" iyz="0"
+                />
+            </inertial>
+
+        </link>
+
+        <!-- Joint -->
+        <joint name="${parent}_to_${name}" type="continuous">
+            <parent link="${parent}" />
+            <child link="${name}" />
+            <origin xyz="${x} ${y} ${z}" rpy="${rpy}" />
+            <axis xyz="${axis}" />
+        </joint>
+
+    </xacro:macro>
+
+
     <!-- Wheels -->
     <xacro:wheel name="lb_wheel"
         parent="chassis"
@@ -225,5 +300,24 @@
         y="0"
         z="${base_height/2}"
         rpy="0 0 0" />
+
+    <xacro:arm_L
+        name="arm1"
+        parent="chassis"
+        x="${base_length/2}" y="${base_width/2 - arm_vert_radius}"
+        z="${-(base_height/2 - arm_vert_radius)}"
+        rpy="0 1.5708 0"
+        axis="0 0 1"
+        dir="-1"
+    />
+
+    <xacro:arm_L
+        name="arm2"
+        parent="chassis"
+        x="${base_length/2}" y="${-(base_width/2 - arm_vert_radius)}"
+        z="${-(base_height/2 - arm_vert_radius)}"
+        rpy="0 1.5708 0"
+        axis="0 0 1"
+    />
 
 </robot>

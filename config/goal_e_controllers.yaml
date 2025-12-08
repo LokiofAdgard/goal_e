@@ -10,6 +10,9 @@ controller_manager:
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
 
+    arm_controller:
+      type: position_controllers/JointGroupPositionController
+
 diff_cont:
   ros__parameters:
 
@@ -23,3 +26,9 @@ diff_cont:
     wheel_radius: 0.06
 
     use_stamped_vel: true
+
+arm_controller:
+  ros__parameters:
+    joints:
+      - chassis_to_arm1
+      - chassis_to_arm2
