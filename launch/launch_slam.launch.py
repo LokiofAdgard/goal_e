@@ -3,6 +3,7 @@ from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, Exec
 from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from ament_index_python.packages import get_package_share_directory
 import os
 
 def generate_launch_description():
@@ -19,10 +20,27 @@ def generate_launch_description():
         description='Use simulation time'
     )
 
+    slam_params = os.path.join(
+        get_package_share_directory('goal_e'),
+        'config', 'mapper_params_online_async.yaml'
+    )
+
     declare_slam_params_file = DeclareLaunchArgument(
         'slam_params_file',
-        default_value='/home/admin/ROS2/ros2_jazzy/src/goal_e/config/mapper_params_online_async.yaml',
-        description='Full path to the slam_toolbox parameters file'
+        default_value=slam_params,
+        description='Path to the slam_toolbox parameters file'
+    )
+
+    nav2_params = os.path.join(
+        get_package_share_directory('goal_e'),
+        'config',
+        'nav2_params.yaml'
+    )
+
+    declare_nav2_params_file = DeclareLaunchArgument(
+        'nav2_params_file',
+        default_value=nav2_params,
+        description='Path to the Nav2 parameters file'
     )
 
     # Launch Nav2
@@ -34,7 +52,8 @@ def generate_launch_description():
             )
         ),
         launch_arguments={
-            'use_sim_time': LaunchConfiguration('use_sim_time')
+            'use_sim_time': LaunchConfiguration('use_sim_time'),
+            'params_file': LaunchConfiguration('nav2_params_file')
         }.items()
     )
 
@@ -48,7 +67,7 @@ def generate_launch_description():
         ),
         launch_arguments={
             'use_sim_time': LaunchConfiguration('use_sim_time'),
-            'slam_params_file': LaunchConfiguration('slam_params_file')
+            'params_file': LaunchConfiguration('slam_params_file')
         }.items()
     )
 
@@ -67,6 +86,7 @@ def generate_launch_description():
         declare_use_rviz,
         declare_use_sim_time,
         declare_slam_params_file,
+        declare_nav2_params_file,
         nav2_launch,
         slam_launch,
         rviz_launch
