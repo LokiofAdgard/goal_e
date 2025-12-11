@@ -17,6 +17,7 @@ setup(
         (os.path.join('share', package_name, 'launch'), glob('launch/*')),
         (os.path.join('share', package_name, 'config'), glob('config/*')),
         (os.path.join('share', package_name, 'world'), glob('world/*')),
+        (os.path.join('share', package_name, 'map'), glob('map/*')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -35,6 +36,7 @@ setup(
             'twistToStamped = goal_e.twistToStamped:main',
             'lidar_frame_fix = goal_e.lidar_frame_fix:main',
             'spawn_spheres = goal_e.spawn_spheres:main',
+            'initial_pose_publisher = goal_e.initial_pose_publisher:main',
         ],
     },
 )
