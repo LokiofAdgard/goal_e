@@ -11,7 +11,7 @@ controller_manager:
       type: joint_state_broadcaster/JointStateBroadcaster
 
     arm_controller:
-      type: position_controllers/JointGroupPositionController
+      type: joint_trajectory_controller/JointTrajectoryController
 
 diff_cont:
   ros__parameters:
@@ -22,7 +22,7 @@ diff_cont:
 
     left_wheel_names: ['chassis_to_lf_wheel', 'chassis_to_lb_wheel']
     right_wheel_names: ['chassis_to_rf_wheel', 'chassis_to_rb_wheel']
-    wheel_separation: 0.325
+    wheel_separation: 0.6
     wheel_radius: 0.06
 
     use_stamped_vel: true
@@ -32,3 +32,18 @@ arm_controller:
     joints:
       - chassis_to_arm1
       - chassis_to_arm2
+
+    command_interfaces:
+      - position
+
+    state_interfaces:
+      - position
+      - velocity
+
+    constraints:
+      goal_time: 0.5
+      stopped_velocity_tolerance: 0.01
+
+    gains:
+      chassis_to_arm1: {p: 100.0, d: 1.0, i: 0.0}
+      chassis_to_arm2: {p: 100.0, d: 1.0, i: 0.0}
