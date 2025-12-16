@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import math
 import rclpy
 from rclpy.node import Node
@@ -5,7 +6,7 @@ from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import OccupancyGrid
 from visualization_msgs.msg import Marker, MarkerArray
-from geometry_msgs.msg import PointStamped
+from geometry_msgs.msg import PointStamped, Point
 
 import tf2_ros
 import tf2_geometry_msgs
@@ -18,15 +19,26 @@ from rclpy.qos import (
 )
 
 # ============================
-# Hardcoded tuning parameters
+# Tuning parameters
 # ============================
 MIN_DISTANCE_FROM_MAP = 0.10   # meters
-CLUSTER_DIST = 0.15            # meters
+CLUSTER_DIST = 0.15
 MIN_CLUSTER_POINTS = 6
 
-MAX_RADIUS_STD = 0.05          # meters
+MAX_RADIUS_STD = 0.05
 MIN_ARC_RADIUS = 0.05
-MAX_ARC_RADIUS = 2.0
+MAX_ARC_RADIUS = 0.50
+
+# ============================
+# Ball classification
+# ============================
+BALL_RADII = {
+    "red": 0.07,
+    "green": 0.20,
+    "blue": 0.26
+}
+
+RADIUS_TOL = 0.03
 
 
 class ScanMapDifferencer(Node):
@@ -41,30 +53,28 @@ class ScanMapDifferencer(Node):
         )
 
         self.create_subscription(
-            OccupancyGrid,
-            '/map',
-            self.map_callback,
-            map_qos
+            OccupancyGrid, '/map', self.map_callback, map_qos
         )
 
         self.create_subscription(
-            LaserScan,
-            '/scan',
-            self.scan_callback,
-            qos_profile_sensor_data
+            LaserScan, '/scan', self.scan_callback, qos_profile_sensor_data
         )
 
         self.marker_pub = self.create_publisher(
-            MarkerArray,
-            '/unmapped_scan_points',
-            10
+            MarkerArray, '/unmapped_scan_points', 10
         )
 
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         self.map = None
-        self.get_logger().info('Scan–Map differencer with arc detection started')
+
+        # Store detected centers
+        self.red_ball = None
+        self.green_ball = None
+        self.blue_ball = None
+
+        self.get_logger().info('Scan–Map differencer (center points only) started')
 
     # ============================
     def map_callback(self, msg):
@@ -84,20 +94,12 @@ class ScanMapDifferencer(Node):
         except Exception:
             return
 
-        base_marker = Marker()
-        base_marker.header.frame_id = self.map.header.frame_id
-        base_marker.header.stamp = self.get_clock().now().to_msg()
-        base_marker.ns = 'unmapped_points'
-        base_marker.id = 0
-        base_marker.type = Marker.POINTS
-        base_marker.action = Marker.ADD
-        base_marker.scale.x = 0.05
-        base_marker.scale.y = 0.05
-        base_marker.color.r = 1.0
-        base_marker.color.a = 1.0
+        # ----------------------------
+        # Collect unmapped points
+        # ----------------------------
+        points = []
 
         angle = scan.angle_min
-
         for r in scan.ranges:
             if not math.isfinite(r):
                 angle += scan.angle_increment
@@ -115,24 +117,18 @@ class ScanMapDifferencer(Node):
                 continue
 
             if self.is_unmapped(p_map.point.x, p_map.point.y):
-                base_marker.points.append(p_map.point)
+                points.append(p_map.point)
 
             angle += scan.angle_increment
 
-        self.get_logger().info(
-            f"Unmapped points: {len(base_marker.points)}",
-            throttle_duration_sec=1.0
-        )
-
-        if not base_marker.points:
+        if not points:
             return
 
-        clusters = self.cluster_points(base_marker.points)
+        clusters = self.cluster_points(points)
 
-        markers = MarkerArray()
-        markers.markers.append(base_marker)
-
-        mid = 1
+        # ----------------------------
+        # Fit arcs and classify
+        # ----------------------------
         for cluster in clusters:
             fit = self.fit_circle(cluster)
             if fit is None:
@@ -140,25 +136,58 @@ class ScanMapDifferencer(Node):
 
             cx, cy, r, r_std = fit
 
-            if (
-                r_std < MAX_RADIUS_STD and
-                MIN_ARC_RADIUS < r < MAX_ARC_RADIUS
-            ):
-                m = Marker()
-                m.header = base_marker.header
-                m.ns = 'arc_centers'
-                m.id = mid
-                mid += 1
-                m.type = Marker.SPHERE
-                m.scale.x = 0.12
-                m.scale.y = 0.12
-                m.scale.z = 0.12
-                m.color.g = 1.0
-                m.color.a = 1.0
-                m.pose.position.x = cx
-                m.pose.position.y = cy
+            if r_std > MAX_RADIUS_STD:
+                continue
 
-                markers.markers.append(m)
+            for color, target_r in BALL_RADII.items():
+                if abs(r - target_r) > RADIUS_TOL:
+                    continue
+
+                if color == "red" and self.red_ball is None:
+                    self.red_ball = (cx, cy)
+                elif color == "green" and self.green_ball is None:
+                    self.green_ball = (cx, cy)
+                elif color == "blue" and self.blue_ball is None:
+                    self.blue_ball = (cx, cy)
+
+        # ----------------------------
+        # Publish center markers only
+        # ----------------------------
+        markers = MarkerArray()
+        mid = 0
+
+        def make_marker(name, color, pos):
+            nonlocal mid
+            m = Marker()
+            m.header.frame_id = self.map.header.frame_id
+            m.header.stamp = self.get_clock().now().to_msg()
+            m.ns = name
+            m.id = mid
+            mid += 1
+            m.type = Marker.POINTS
+            m.action = Marker.ADD
+            m.scale.x = 0.1
+            m.scale.y = 0.1
+            m.color.a = 1.0
+
+            if color == "red":
+                m.color.r = 1.0
+            elif color == "green":
+                m.color.g = 1.0
+            elif color == "blue":
+                m.color.b = 1.0
+
+            p = Point()
+            p.x, p.y, p.z = pos[0], pos[1], 0.0
+            m.points.append(p)
+            return m
+
+        if self.red_ball:
+            markers.markers.append(make_marker("red_ball", "red", self.red_ball))
+        if self.green_ball:
+            markers.markers.append(make_marker("green_ball", "green", self.green_ball))
+        if self.blue_ball:
+            markers.markers.append(make_marker("blue_ball", "blue", self.blue_ball))
 
         self.marker_pub.publish(markers)
 
@@ -178,11 +207,9 @@ class ScanMapDifferencer(Node):
             return False
 
         radius = int(math.ceil(MIN_DISTANCE_FROM_MAP / res))
-
         for dx in range(-radius, radius + 1):
             for dy in range(-radius, radius + 1):
-                nx = mx + dx
-                ny = my + dy
+                nx, ny = mx + dx, my + dy
                 if 0 <= nx < info.width and 0 <= ny < info.height:
                     if self.map.data[ny * info.width + nx] > 50:
                         return False
@@ -200,8 +227,8 @@ class ScanMapDifferencer(Node):
 
             cluster = [p]
             used[i] = True
-
             queue = [i]
+
             while queue:
                 idx = queue.pop()
                 for j, q in enumerate(points):
@@ -233,24 +260,24 @@ class ScanMapDifferencer(Node):
         for x, y in zip(xs, ys):
             u = x - xm
             v = y - ym
-            Suu += u * u
-            Svv += v * v
-            Suv += u * v
-            Suuu += u * u * u
-            Svvv += v * v * v
-            Suvv += u * v * v
-            Svuu += v * u * u
+            Suu += u*u
+            Svv += v*v
+            Suv += u*v
+            Suuu += u*u*u
+            Svvv += v*v*v
+            Suvv += u*v*v
+            Svuu += v*u*u
 
         det = 2 * (Suu * Svv - Suv * Suv)
         if abs(det) < 1e-6:
             return None
 
-        cx = xm + (Svv * (Suuu + Suvv) - Suv * (Svvv + Svuu)) / det
-        cy = ym + (Suu * (Svvv + Svuu) - Suv * (Suuu + Suvv)) / det
+        cx = xm + (Svv*(Suuu+Suvv) - Suv*(Svvv+Svuu)) / det
+        cy = ym + (Suu*(Svvv+Svuu) - Suv*(Suuu+Suvv)) / det
 
-        radii = [math.hypot(p.x - cx, p.y - cy) for p in cluster]
+        radii = [math.hypot(p.x-cx, p.y-cy) for p in cluster]
         r_mean = sum(radii) / len(radii)
-        r_std = math.sqrt(sum((r - r_mean) ** 2 for r in radii) / len(radii))
+        r_std = math.sqrt(sum((r-r_mean)**2 for r in radii) / len(radii))
 
         return cx, cy, r_mean, r_std
 

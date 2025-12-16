@@ -10,6 +10,7 @@ def generate_launch_description():
     spawn_bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
+        name='sphere_bridge',
         arguments=[
             '/world/assessment_world/create@ros_gz_interfaces/srv/SpawnEntity'
         ],

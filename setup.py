@@ -38,6 +38,7 @@ setup(
             'spawn_spheres = goal_e.spawn_spheres:main',
             'initial_pose_publisher = goal_e.initial_pose_publisher:main',
             'target_finder = goal_e.target_finder:main',
+            'pos_commander = goal_e.pos_commander:main',
         ],
     },
 )
