@@ -22,7 +22,7 @@ diff_cont:
 
     left_wheel_names: ['chassis_to_lf_wheel', 'chassis_to_lb_wheel']
     right_wheel_names: ['chassis_to_rf_wheel', 'chassis_to_rb_wheel']
-    wheel_separation: 0.6
+    wheel_separation: 0.65
     wheel_radius: 0.06
 
     use_stamped_vel: true

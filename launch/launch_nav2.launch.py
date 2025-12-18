@@ -89,7 +89,8 @@ def generate_launch_description():
         condition=IfCondition(LaunchConfiguration('use_rviz')),
         cmd=[
             'ros2', 'run', 'rviz2', 'rviz2',
-            '-d', '/opt/ros/jazzy/share/nav2_bringup/rviz/nav2_default_view.rviz'
+            # '-d', '/opt/ros/jazzy/share/nav2_bringup/rviz/nav2_default_view.rviz'
+            '-d', '/home/admin/ROS2/ros2_jazzy/src/goal_e/config/goal_e.rviz'
         ],
         output='screen'
     )
