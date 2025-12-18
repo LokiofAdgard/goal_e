@@ -38,7 +38,7 @@ APPROACH_DIST = 1.40
 ANGLE_STEP = math.radians(5)
 
 APPROACH_COST_RADIUS = 0.30  # meters
-PICKUP_CLEARANCE = 0.41
+PICKUP_CLEARANCE = 0.39
 
 # ============================
 # Ball classification
@@ -54,8 +54,8 @@ RADIUS_TOL = 0.03
 # ============================
 # Weighted scoring parameters
 # ============================
-WEIGHT_COST = 0.07
-WEIGHT_DIST = 0.93
+WEIGHT_COST = 0.09
+WEIGHT_DIST = 0.91
 
 
 class ScanMapDifferencer(Node):
