@@ -5,6 +5,8 @@ from launch.substitutions import LaunchConfiguration
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch_ros.substitutions import FindPackageShare
 import os
 
 def generate_launch_description():
@@ -89,8 +91,11 @@ def generate_launch_description():
         condition=IfCondition(LaunchConfiguration('use_rviz')),
         cmd=[
             'ros2', 'run', 'rviz2', 'rviz2',
-            # '-d', '/opt/ros/jazzy/share/nav2_bringup/rviz/nav2_default_view.rviz'
-            '-d', '/home/admin/ROS2/ros2_jazzy/src/goal_e/config/goal_e.rviz'
+            '-d', PathJoinSubstitution([
+                FindPackageShare('goal_e'),
+                'config',
+                'goal_e.rviz'
+            ])
         ],
         output='screen'
     )
