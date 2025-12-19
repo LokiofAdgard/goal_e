@@ -34,11 +34,11 @@ MIN_CLUSTER_POINTS = 6
 MAX_RADIUS_STD = 0.05
 
 BALL_UPDATE_TOL = 0.45
-APPROACH_DIST = 1.40
+APPROACH_DIST = 1.60
 ANGLE_STEP = math.radians(5)
 
 APPROACH_COST_RADIUS = 0.30  # meters
-PICKUP_CLEARANCE = 0.39
+PICKUP_CLEARANCE = 0.42
 
 # ============================
 # Ball classification

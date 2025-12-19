@@ -30,14 +30,15 @@ class SequentialNav2Goals(Node):
         self.place_index = 0
         self.state = None
         self.cycle_running = False
+        self.ready_for_cycles = False
         self.delay_timer = None
         self.refresh_timer = None
         self.initial_pose_sent = False
 
         # ---------------- Fixed Place Goals ----------------
         self.place_goals = [
-            self.make_goal(-0.2, 1.2, 0.7071, 0.7071),  # approach
-            self.make_goal(-0.15, 1.8, 0.7071, 0.7071)  # drop
+            self.make_goal(-0.2, 1.2, 0.7071, 0.7071),
+            self.make_goal(-0.15, 1.8, 0.7071, 0.7071)
         ]
 
         # ---------------- Nav2 Server ----------------
@@ -46,7 +47,12 @@ class SequentialNav2Goals(Node):
         self.get_logger().info('Nav2 action server available')
 
         # ---------------- Subscriptions ----------------
-        self.create_subscription(PoseArray, '/ball_targets', self.ball_targets_cb, 10)
+        self.create_subscription(
+            PoseArray,
+            '/ball_targets',
+            self.ball_targets_cb,
+            10
+        )
 
         # ---------------- Delay before sending initial pose ----------------
         self.get_logger().info('Waiting for AMCL and costmaps to initialize...')
@@ -63,11 +69,11 @@ class SequentialNav2Goals(Node):
         self.get_logger().info('Navigating to start pose...')
 
         self.state = 'INIT_START_POSE'
-        start_pose = self.make_goal(-1.0, 0.0, 0.00, 1.00)
+        start_pose = self.make_goal(-1.0, 0.0, 0.0, 1.0)
         self.send_nav_goal(start_pose)
 
     # ==================================================
-    # Ball target callback
+    # Ball target callback (updates immediately)
     # ==================================================
     def ball_targets_cb(self, msg: PoseArray):
         updated = []
@@ -86,11 +92,12 @@ class SequentialNav2Goals(Node):
 
         self.latest_targets = updated
 
-    # ==================================================
-    # Periodic refresh: start cycle when idle
-    # ==================================================
-    def refresh_targets(self):
-        if not self.cycle_running and self.latest_targets:
+        # Execute only when system is fully ready
+        if (
+            self.ready_for_cycles and
+            not self.cycle_running and
+            self.latest_targets
+        ):
             self.pick_targets = list(self.latest_targets)
             self.pick_index = 0
             self.cycle_running = True
@@ -124,7 +131,9 @@ class SequentialNav2Goals(Node):
         ps.pose = pose
 
         goal.pose = ps
-        self.nav_client.send_goal_async(goal).add_done_callback(self.goal_response_cb)
+        self.nav_client.send_goal_async(goal).add_done_callback(
+            self.goal_response_cb
+        )
 
     def goal_response_cb(self, future):
         handle = future.result()
@@ -144,11 +153,16 @@ class SequentialNav2Goals(Node):
 
         # ---------------- INITIAL START POSE ----------------
         if self.state == 'INIT_START_POSE':
-            self.get_logger().info('Reached start pose. Starting target refresh...')
+            self.get_logger().info('Initial pose reached. System ready.')
             self.state = None
+            self.ready_for_cycles = True
 
-            # Start periodic target refresh ONLY NOW
-            self.refresh_timer = self.create_timer(2.0, self.refresh_targets)
+            # Start cycle immediately if targets already exist
+            if self.latest_targets:
+                self.pick_targets = list(self.latest_targets)
+                self.pick_index = 0
+                self.cycle_running = True
+                self.start_cycle()
             return
 
         # ---------------- PICK ----------------
