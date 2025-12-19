@@ -88,9 +88,9 @@ Two modes of operation were used:
 - Not affected by localization drift  
 
 **Nav2 autonomous mode:**
-- Works well in open areas  
+- Works well in open regions
 - Struggles with precise alignment near small objects  
-- Sensitive to odometry drift  
+- Sensitive to odometry drift when turning
 
 In practice, teleoperation consistently achieved the full objective, while Nav2 was significantly less successful due to the precision required for ball collection.
 
@@ -157,11 +157,11 @@ It was also observed that the laser scan tends to drift when turning but correct
 
 The arms rotate past 90 degrees to accomodate the largest sphere, but this may cause the outward arms to hit obstacles. An improvement to the system may be to only open past 90 degrees for the largest ball and maintain 90 degrees for the others.
 
-Overall, the project demonstrates a complete ROS2 robotics system integrating URDF modeling, ros2_control hardware abstraction, SLAM‑based mapping, Nav2 navigation, and custom LiDAR‑based detection and manipulation logic. While the robot successfully performs mapping, navigation, teleoperation, and basic ball‑collection behaviors, the fully autonomous pipeline achieved only partial success. Teleoperation reliably completes the task, but Nav2 struggles with the precision required for interacting with small, movable objects. Despite these challenges, the system provides a functional prototype and a strong foundation for future improvements in detection, localization, and manipulation.
+Overall, the project demonstrates a complete ROS2 robotics system integrating URDF modeling, ros2_control hardware abstraction, SLAM‑based mapping, Nav2 navigation, and custom LiDAR‑based detection and manipulation logic. While the robot successfully performs mapping, navigation, teleoperation, and basic ball‑collection behaviors, the fully autonomous pipeline achieved only partial success. Teleoperation reliably completes the task, but Nav2 struggles with the precision required for interacting with small, movable objects.
 
 ## Links
 - [GitHub Repository](https://github.com/LokiofAdgard/goal_e.git)
-- [Demonstration Video]()
+- [Demonstration Video](https://youtu.be/5OHpC-r4kBA)
 
 ## References
 - [URDF tutorial](https://docs.ros.org/en/humble/Tutorials/Intermediate/URDF/URDF-Main.html)
